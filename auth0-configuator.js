@@ -4,6 +4,7 @@ var Clients = require('./lib/clients');
 var Connections = require('./lib/connections');
 var Rules = require('./lib/rules');
 var fileReader = require ('./lib/fileReader');
+var moment = require('moment');
 
 var program = require('commander');
 var path = require('path');
@@ -11,15 +12,15 @@ var path = require('path');
 
 program
     .version('0.0.1')
-    .option('-m, --mode <mode>', 'Read or write configuration (read, write)', /^(read|write)$/i)
+    .option('-m, --mode <mode>', 'Read or write configuration (save, update)', /^(save|update)$/i)
     .option('-u, --url <url>', 'Auth0 tenant, e.g. https://blabla.auth0.com')
     .option('-t, --token <token>', 'Auth0 token with suffecient permissions for the tenant')
     .option('-d, --dir <directory>', 'Data directory')
-//    .option('-e, --env <environment>', 'Environment', /^(test|qa|prod)$/i, 'test')
+    //    .option('-e, --env <environment>', 'Environment', /^(test|qa|prod)$/i, 'test')
     .parse(process.argv);
 
 if (!program.mode) {
-    console.log( 'Read or write (deploy) Auth0 configuration? Use the -m command line argument with "read" or "write"');
+    console.log( 'Save or update (deploy) Auth0 configuration? Use the -m command line argument with "save" or "update"');
     process.exit(1);
 }
 if (!program.url) {
@@ -52,14 +53,16 @@ var doneConnections = false;
 var doneRules = false;
 
 
-if (mode === 'write') {
-    fileReader.getFileNames(datadir)
+if (mode === 'update') {
+    var backupDir = path.join(datadir, moment().format('YYYY-MM-DD-HH-mm-ss'));
+    fileReader.newDirectory(backupDir)
+        .then(myClients.saveClients(path.join(backupDir,'clients.json')))
+        .then(myConnections.saveConnections(path.join(backupDir, 'connections.json')))
+        .then(myRules.saveRules(path.join(backupDir, 'rules.json')))
+        .then(fileReader.getFileNames(datadir))
         .then(fileReader.loadDataFiles)
-        .then(myClients.deleteClients())
         .then(myClients.deployClients())
-        .then(myConnections.deleteConnections())
         .then(myConnections.deployConnections())
-        .then(myRules.deleteRules())
         .then(myRules.deployRules())
         //.then(myTemplates.deleteEmailTemplates())
         //.then(myTemplates.deployEmailTemplates())
@@ -69,7 +72,7 @@ if (mode === 'write') {
             console.log('Done!');
         })
         .catch(function (error) {
-            Console.log(error);
+            console.log(error);
             process.exit(2);
         })
         .finally(function () {
