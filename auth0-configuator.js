@@ -80,10 +80,11 @@ if (mode === 'update') {
         });
 }
 else {
-    fileReader.newDirectory(datadir)
-        .then(myClients.saveClients(path.join(datadir,'clients.json')))
-        .then(myConnections.saveConnections(path.join(datadir, 'connections.json')))
-        .then(myRules.saveRules(path.join(datadir, 'rules.json')))
+    var saveDir = path.join(datadir, moment().format('YYYY-MM-DD-HH-mm-ss'));
+    fileReader.newDirectory(saveDir)
+        .then(myClients.saveClients(path.join(saveDir,'clients.json')))
+        .then(myConnections.saveConnections(path.join(saveDir, 'connections.json')))
+        .then(myRules.saveRules(path.join(saveDir, 'rules.json')))
         //.then(myTemplates.saveEmailTemplates())
         //.then(myTemplates.savePageTemplates())
         .then(function() {
